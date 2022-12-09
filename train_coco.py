@@ -68,8 +68,6 @@ Testloader = DAVIS_MO_Test(DAVIS_ROOT, resolution='480p', imset='20{}/{}.txt'.fo
 # model = nn.DataParallel(STM(args.backbone))
 model = STM(args.backbone)
 
-# pth = 'coco_weights/coco_pretrained_resnet50_399999.pth'
-# model.load_state_dict(torch.load(pth))
 
 
 

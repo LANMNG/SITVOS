@@ -53,9 +53,6 @@ def get_arguments():
 args = get_arguments()
 
 rate = args.sample_rate
-if args.wandb:
-	wandb.init(project="TransVOS_v1_pretrain")
-	wandb.run.name = 'davis_youtube'
 
 
 
@@ -194,21 +191,6 @@ for iter_ in range(args.total_iter):
 		if args.wandb:
 			wandb.log({"lr":lr_iter})
 			wandb.log({"loss": loss_log})
-
-	# if (iter_+1) == 50000:
-	# 	lr = 2e-6
-	# 	for param_group in optimizer.param_groups:
-	# 		param_group["lr"] = lr
-	#
-	# if (iter_+1) == 300000:
-	# 	lr = 4e-7
-	# 	for param_group in optimizer.param_groups:
-	# 		param_group["lr"] = lr
-	#
-	# if (iter_+1) == 700000:
-	# 	lr = 8e-8
-	# 	for param_group in optimizer.param_groups:
-	# 		param_group["lr"] = lr
 
 	if (iter_+1) % save_step == 0 and (iter_+1) >= 500000:
 		if not os.path.exists(args.save):

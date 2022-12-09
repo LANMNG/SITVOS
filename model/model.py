@@ -6,7 +6,6 @@ import torch.nn.init as init
 import torch.utils.model_zoo as model_zoo
 from torchvision import models
 from model.transformer import MultiHeadAttention, CrossAttention
-# from vis_attention import vis_attention
 # general libs
 import cv2
 import matplotlib.pyplot as plt
@@ -51,83 +50,6 @@ class ResBlock(nn.Module):
 
         return x + r
 
-    # class Encoder_M(nn.Module):
-#     def __init__(self,backbone):
-#         super(Encoder_M, self).__init__()
-#         if backbone == 'resnest101':
-#             self.conv1_m = nn.Conv2d(1, 128, kernel_size=7, stride=2, padding=3, bias=False)
-#             self.conv1_o = nn.Conv2d(1, 128, kernel_size=7, stride=2, padding=3, bias=False)
-#         else:
-#             self.conv1_m = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
-#             self.conv1_o = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
-#
-#         if backbone == 'resnet50':
-#             resnet = models.resnet50(pretrained=True)
-#         elif backbone == 'resnet18':
-#             resnet = models.resnet18(pretrained=True)
-#         elif backbone == 'resnest101':
-#             resnet = resnest101(pretrained=True)
-#
-#         self.conv1 = resnet.conv1
-#         self.bn1 = resnet.bn1
-#         self.relu = resnet.relu  # 1/2, 64
-#         self.maxpool = resnet.maxpool
-#
-#         self.res2 = resnet.layer1 # 1/4, 256
-#         self.res3 = resnet.layer2 # 1/8, 512
-#         self.res4 = resnet.layer3 # 1/16, 1024
-#
-#         self.register_buffer('mean', torch.FloatTensor([0.485, 0.456, 0.406]).view(1,3,1,1))
-#         self.register_buffer('std', torch.FloatTensor([0.229, 0.224, 0.225]).view(1,3,1,1))
-#
-#     def forward(self, in_f, in_m, in_o):
-#         f = (in_f - self.mean) / self.std
-#         m = torch.unsqueeze(in_m, dim=1).float() # add channel dim
-#         o = torch.unsqueeze(in_o, dim=1).float() # add channel dim
-#
-#         x = self.conv1(f) + self.conv1_m(m) + self.conv1_o(o)
-#         x = self.bn1(x)
-#         c1 = self.relu(x)   # 1/2, 64
-#         x = self.maxpool(c1)  # 1/4, 64
-#         r2 = self.res2(x)   # 1/4, 256
-#         r3 = self.res3(r2) # 1/8, 512
-#         r4 = self.res4(r3) # 1/8, 1024
-#         return r4, r3, r2, c1, f
-
-# class Encoder_Q(nn.Module):
-#     def __init__(self, backbone):
-#         super(Encoder_Q, self).__init__()
-#
-#         if backbone == 'resnet50':
-#             resnet = models.resnet50(pretrained=True)
-#         elif backbone == 'resnet18':
-#             resnet = models.resnet18(pretrained=True)
-#         elif backbone == 'resnet101':
-#             resnet = resnest101()
-#
-#         self.conv1 = resnet.conv1
-#         self.bn1 = resnet.bn1
-#         self.relu = resnet.relu  # 1/2, 64
-#         self.maxpool = resnet.maxpool
-#
-#         self.res2 = resnet.layer1 # 1/4, 256
-#         self.res3 = resnet.layer2 # 1/8, 512
-#         self.res4 = resnet.layer3 # 1/8, 1024
-#
-#         self.register_buffer('mean', torch.FloatTensor([0.485, 0.456, 0.406]).view(1,3,1,1))
-#         self.register_buffer('std', torch.FloatTensor([0.229, 0.224, 0.225]).view(1,3,1,1))
-#
-#     def forward(self, in_f):
-#         f = (in_f - self.mean) / self.std
-#
-#         x = self.conv1(f)
-#         x = self.bn1(x)
-#         c1 = self.relu(x)   # 1/2, 64
-#         x = self.maxpool(c1)  # 1/4, 64
-#         r2 = self.res2(x)   # 1/4, 256
-#         r3 = self.res3(r2) # 1/8, 512
-#         r4 = self.res4(r3) # 1/8, 1024
-#         return r4, r3, r2, c1, f
 
 class Encoder_mask(nn.Module):
     def __init__(self):
@@ -284,10 +206,6 @@ class Memory(nn.Module):
         self.projector = nn.Conv2d(256, 512, kernel_size=(1, 1))
 
     def forward(self, m_k, m_v, q_in):  # m_k: B,c,t,h,w /  q_in: B, c, h, w
-        # vis_attention
-        # if t==30:
-        #     vis_attention(q_in, 1)
-        #     vis_attention(m_k[:,:,0], 6)
         B, D_e, T, H, W = m_k.size()
         _, D_o, _, _, _ = m_v.size()  # mask
         # B_q, C_q, H_q, W_q = q_in.size()
@@ -299,46 +217,18 @@ class Memory(nn.Module):
         mi = torch.transpose(mi, 1, 2)  # b, THW, D_e
         T_self = self.self_atten_T(mi, mi, mi)  # b, THW, D_e
 
-        # vis_attention
-        # if t == 30:
-        #     T_self_vis = torch.transpose(T_self, 1, 2)  # B,C,THW
-        #     T_self_vis = T_self_vis.view(B, D_e, T, H, W)
-        #     vis_attention(T_self_vis[:,:,0], 66)
-
         qi = q_in.view(B, D_e, H * W)  # b, D_e, HW
         qi = torch.transpose(qi, 1, 2)  # b, HW, D_e
         C_self = self.self_atten_C(qi, qi, qi)  # B, HW, D_e
 
-        # vis_attention
-        # if t == 30:
-        #     C_self_vis = torch.transpose(C_self, 1, 2)  # B,C,HW
-        #     C_self_vis = C_self_vis.view(B, D_e, H, W)
-        #     vis_attention(C_self_vis, 11)
-        # mv = m_v.view(B, D_e, T * H * W)
-        # mv = torch.transpose(mv, 1, 2)  # b, THW, D_e
 
         T_att_out = self.cross_atten1(T_self, C_self, C_self)  # B,THW,C
         T_att_final = T_att_out + T_self  # #B,THW,C
         T_att_final = self.layer_norm(T_att_final)  # B,THW,C
 
-        # vis_attention
-        # if t == 30:
-        #     T_att_final_vis = torch.transpose(T_att_final, 1, 2)  # B,C,THW
-        #     T_att_final_vis = T_att_final_vis.view(B, D_e, T, H, W)
-        #     vis_attention(T_att_final_vis[:,:,0], 666)
-
-        # mask_att_final = torch.transpose(mask_att_final, 1, 2) #B,C,HW
-        # mask_att_final = mask_att_final.view(B, D_e, H, W)
-
         C_att_out = self.cross_atten2(C_self, T_self, f_m)  # B,HW,C
         C_att_final = C_att_out + C_self  #
         C_att_final = self.layer_norm(C_att_final)  # B,HW,C
-
-        # vis_attention
-        # if t == 30:
-        #     C_att_final_vis = torch.transpose(C_att_final, 1, 2)  # B,C,HW
-        #     C_att_final_vis = C_att_final_vis.view(B, D_e, H, W)
-        #     vis_attention(C_att_final_vis, 111)
 
         final_out = self.cross_atten3(C_att_final, T_att_final, T_att_final)  # B,HW,C
         final_out = final_out + C_att_final
@@ -346,8 +236,6 @@ class Memory(nn.Module):
         final_out = torch.transpose(final_out, 1, 2)  # B,C,HW
         final_out = final_out.view(B, D_e, H, W)
 
-        # vis_attention
-        # vis_attention(final_out, 3)
 
         final_out = torch.cat([final_out, q_in], dim=1)  # 256
         final_out = self.projector(final_out)
@@ -376,11 +264,7 @@ class STM(nn.Module):
         # self.self_atten= ScaledDotProductAttention()
         self.Encoder = Encoder(backbone)
         self.Encoder_mask = Encoder_mask()
-        # self.Encoder_M = Encoder_M(backbone)
-        # self.Encoder_Q = Encoder_Q(backbone)
 
-        # self.KV_M_r4 = KeyValue(1024//scale_rate, keydim=128//scale_rate, valdim=512//scale_rate)
-        # self.KV_Q_r4 = KeyValue(1024//scale_rate, keydim=128//scale_rate, valdim=512//scale_rate)
         self.W_K = nn.Conv2d(1024, 128, kernel_size=(3, 3), padding=(1, 1), stride=1)
         self.W_Q = nn.Conv2d(1024, 128, kernel_size=(3, 3), padding=(1, 1), stride=1)
         self.W_mask = nn.Conv2d(256, 128, kernel_size=(3, 3), padding=(1, 1), stride=1)

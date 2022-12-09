@@ -35,11 +35,7 @@ python eval.py -p "path to weights"
 ```
 ## Demo
 
-<p align="center">
-  <img src="docs/india.png" width="90%"  height="90%">
-</p>
-
-![](docs/india.gif)
+![image](https://github.com/LANMNG/SITVOS/blob/main/docs/india.gif)
 
 ## Acknowledgement
 This codebase borrows the code and structure from [official STM repository](https://github.com/seoungwugoh/STM)

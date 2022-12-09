@@ -35,6 +35,10 @@ python eval.py -p "path to weights"
 ```
 ## Demo
 
+<p align="center">
+  <img src="docs/india.png" width="90%"  height="90%">
+</p>
+
 ![](docs/india.gif)
 
 ## Acknowledgement
